@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: vayon-system
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn vayon_advanced:app
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: 3.11.0
+  
+  - type: pserv
+    name: vayon-postgres
+    env: postgresql
+    plan: free
+    ipAllowList: []

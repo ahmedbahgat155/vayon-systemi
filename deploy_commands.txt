@@ -1,0 +1,46 @@
+# أوامر Git لرفع المشروع على GitHub
+
+# 1. تهيئة Git (إذا لم يكن مهيأ)
+git init
+
+# 2. إضافة جميع الملفات
+git add .
+
+# 3. إنشاء أول commit
+git commit -m "Initial commit - VAYON Business Management System"
+
+# 4. تحديد الفرع الرئيسي
+git branch -M main
+
+# 5. ربط المستودع المحلي بـ GitHub (استبدل YOUR_USERNAME باسم المستخدم)
+git remote add origin https://github.com/YOUR_USERNAME/vayon-system.git
+
+# 6. رفع الكود
+git push -u origin main
+
+# ===== للتحديثات اللاحقة =====
+
+# إضافة التغييرات
+git add .
+
+# إنشاء commit جديد
+git commit -m "وصف التحديث"
+
+# رفع التحديث
+git push origin main
+
+# ===== معلومات مهمة =====
+
+# رابط إنشاء مستودع جديد على GitHub:
+# https://github.com/new
+
+# اسم المستودع المقترح: vayon-system
+# الوصف: VAYON - نظام إدارة الأعمال المتكامل
+
+# ===== متغيرات البيئة لـ Render =====
+
+# SECRET_KEY (مثال):
+# vayon-super-secret-key-2024-production-render-12345
+
+# DATABASE_URL:
+# سيتم الحصول عليه من PostgreSQL Database في Render
