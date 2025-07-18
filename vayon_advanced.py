@@ -622,55 +622,8 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    # حساب الإحصائيات
-    today = datetime.now().date()
-    
-    # مبيعات اليوم
-    today_sales = Sale.query.filter(
-        db.func.date(Sale.sale_date) == today
-    ).all()
-    
-    today_sales_count = len(today_sales)
-    today_sales_amount = sum([sale.total_amount for sale in today_sales])
-    
-    # الخزائن
-    treasuries = Treasury.query.all()
-    main_treasury_balance = 0
-    shipping_treasury_balance = 0
-    
-    for treasury in treasuries:
-        if 'رئيسية' in treasury.name:
-            main_treasury_balance = treasury.current_balance
-        elif 'شحن' in treasury.name:
-            shipping_treasury_balance = treasury.current_balance
-    
-    # المنتجات منخفضة المخزون
-    low_stock_products = Product.query.filter(
-        Product.current_stock <= Product.min_stock,
-        Product.min_stock > 0
-    ).count()
-    
-    # نسبة التحصيل (مبسطة)
-    total_sales = Sale.query.all()
-    if total_sales:
-        total_amount = sum([sale.total_amount for sale in total_sales])
-        paid_amount = sum([sale.paid_amount for sale in total_sales])
-        collection_rate = (paid_amount / total_amount * 100) if total_amount > 0 else 0
-    else:
-        collection_rate = 0
-    
-    stats = {
-        'today_sales_count': today_sales_count,
-        'today_sales_amount': float(today_sales_amount),
-        'pending_shipments': 0,  # سيتم تطويرها لاحقاً
-        'delivered_shipments': 0,  # سيتم تطويرها لاحقاً
-        'collection_rate': round(collection_rate, 1),
-        'low_stock_products': low_stock_products,
-        'main_treasury_balance': float(main_treasury_balance),
-        'shipping_treasury_balance': float(shipping_treasury_balance)
-    }
-    
-    return render_template('dashboard.html', stats=stats)
+    # استخدام صفحة بسيطة مؤقتاً
+    return render_template('dashboard_simple.html')
 
 # ==================== نظام فواتير البيع المتقدم ====================
 
