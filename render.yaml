@@ -1,9 +1,9 @@
 services:
   - type: web
-    name: vayon-system
+    name: vayon-erp
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn vayon_advanced:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --max-requests 1000
     healthCheckPath: /health
     envVars:
       - key: SECRET_KEY
@@ -12,11 +12,13 @@ services:
         value: 3.11.0
       - key: DATABASE_URL
         fromDatabase:
-          name: vayon-postgres
+          name: vayon-erp-db
           property: connectionString
+      - key: FLASK_ENV
+        value: production
   
   - type: pserv
-    name: vayon-postgres
+    name: vayon-erp-db
     env: postgresql
-    plan: free
+    plan: starter
     ipAllowList: []
