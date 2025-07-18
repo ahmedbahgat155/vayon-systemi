@@ -3,12 +3,17 @@ services:
     name: vayon-system
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn vayon_advanced:app
+    startCommand: gunicorn vayon_advanced:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120
+    healthCheckPath: /health
     envVars:
       - key: SECRET_KEY
         generateValue: true
       - key: PYTHON_VERSION
         value: 3.11.0
+      - key: DATABASE_URL
+        fromDatabase:
+          name: vayon-postgres
+          property: connectionString
   
   - type: pserv
     name: vayon-postgres

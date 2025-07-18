@@ -30,10 +30,40 @@ db.init_app(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+login_manager.login_message = 'يرجى تسجيل الدخول للوصول لهذه الصفحة'
+login_manager.login_message_category = 'info'
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(user_id)
+
+# Route للتحقق من صحة التطبيق
+@app.route('/health')
+def health_check():
+    try:
+        # التحقق من قاعدة البيانات
+        db.session.execute('SELECT 1')
+        return jsonify({
+            'status': 'healthy',
+            'database': 'connected',
+            'message': 'VAYON System is running'
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy',
+            'database': 'disconnected',
+            'error': str(e)
+        }), 500
+
+# معالجات الأخطاء
+@app.errorhandler(404)
+def not_found_error(error):
+    return render_template('setup_first_admin.html'), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    db.session.rollback()
+    return render_template('setup_first_admin.html'), 500
 
 # دالة مساعدة لتوليد رقم فاتورة
 def generate_invoice_number(prefix='INV'):
@@ -128,28 +158,44 @@ def update_treasury(treasury_id, amount, transaction_type, reference_type=None, 
 @app.route('/')
 def index():
     try:
+        # إنشاء الجداول إذا لم تكن موجودة
+        with app.app_context():
+            db.create_all()
+
         admin_exists = User.query.filter_by(role='admin').first()
         if not admin_exists:
             return redirect(url_for('setup_first_admin'))
     except Exception as e:
-        db.create_all()
+        print(f"خطأ في الصفحة الرئيسية: {e}")
+        try:
+            with app.app_context():
+                db.create_all()
+        except Exception as db_error:
+            print(f"خطأ في إنشاء قاعدة البيانات: {db_error}")
         return redirect(url_for('setup_first_admin'))
-    
+
     if not current_user.is_authenticated:
         return redirect(url_for('login'))
-    
+
     return redirect(url_for('dashboard'))
 
 # صفحة إعداد أول مدير
 @app.route('/setup-first-admin', methods=['GET', 'POST'])
 def setup_first_admin():
     try:
-        db.create_all()
+        with app.app_context():
+            db.create_all()
         admin_exists = User.query.filter_by(role='admin').first()
         if admin_exists:
             return redirect(url_for('login'))
     except Exception as e:
-        print(f"خطأ: {e}")
+        print(f"خطأ في إعداد المدير الأول: {e}")
+        # محاولة إنشاء الجداول مرة أخرى
+        try:
+            with app.app_context():
+                db.create_all()
+        except Exception as db_error:
+            print(f"خطأ في إنشاء قاعدة البيانات: {db_error}")
     
     if request.method == 'POST':
         username = request.form.get('username')
@@ -166,7 +212,7 @@ def setup_first_admin():
         if password != confirm_password:
             flash('كلمات المرور غير متطابقة', 'error')
             return render_template('setup_first_admin.html')
-        
+
         if len(password) < 6:
             flash('كلمة المرور يجب أن تكون 6 أحرف على الأقل', 'error')
             return render_template('setup_first_admin.html')
@@ -536,7 +582,12 @@ def login():
         if not admin_exists:
             return redirect(url_for('setup_first_admin'))
     except Exception as e:
-        db.create_all()
+        print(f"خطأ في تسجيل الدخول: {e}")
+        try:
+            with app.app_context():
+                db.create_all()
+        except Exception as db_error:
+            print(f"خطأ في إنشاء قاعدة البيانات: {db_error}")
         return redirect(url_for('setup_first_admin'))
     
     if request.method == 'POST':
@@ -2057,21 +2108,31 @@ def backup_management():
     return "<h1>النسخ الاحتياطي - قيد التطوير</h1>"
 
 # تهيئة قاعدة البيانات
-with app.app_context():
+def init_database():
+    """تهيئة قاعدة البيانات"""
     try:
-        db.create_all()
-        print("🎉 تم إنشاء قاعدة البيانات المتقدمة بنجاح!")
-        print("💎 نظام VAYON المتقدم جاهز للعمل")
-        if os.environ.get('DATABASE_URL'):
-            print("🌐 النظام يعمل على Render")
-        else:
-            print("🌐 يمكنك الوصول للنظام على: http://localhost:5000")
-        print("💰 العملة: الجنيه المصري (ج.م)")
-        print("🚀 المميزات: فواتير بيع متقدمة، إدارة مخزون، خزائن متعددة")
+        with app.app_context():
+            db.create_all()
+            print("🎉 تم إنشاء قاعدة البيانات المتقدمة بنجاح!")
+            print("💎 نظام VAYON المتقدم جاهز للعمل")
+            if os.environ.get('DATABASE_URL'):
+                print("🌐 النظام يعمل على Render")
+            else:
+                print("🌐 يمكنك الوصول للنظام على: http://localhost:5000")
+            print("💰 العملة: الجنيه المصري (ج.م)")
+            print("🚀 المميزات: فواتير بيع متقدمة، إدارة مخزون، خزائن متعددة")
+            return True
     except Exception as e:
         print(f"❌ خطأ في إنشاء قاعدة البيانات: {e}")
+        return False
+
+# محاولة تهيئة قاعدة البيانات
+init_database()
 
 if __name__ == '__main__':
+    # تهيئة قاعدة البيانات عند بدء التطبيق
+    init_database()
+
     port = int(os.environ.get('PORT', 5000))
     debug = not os.environ.get('DATABASE_URL')  # Debug فقط في التطوير
     app.run(debug=debug, host='0.0.0.0', port=port)
